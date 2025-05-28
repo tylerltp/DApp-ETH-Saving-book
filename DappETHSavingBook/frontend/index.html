@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sổ tiết kiệm ETH</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; 
+            padding: 0; 
+            background-color: #f4f4f4;
+            color: #333;
+            background-image: url('4.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .container {
+            max-width: 600px;
+            width: 90%; 
+            margin: auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9); 
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 { color: #0056b3; }
+        div { margin-bottom: 15px; padding: 10px; border: 1px solid #eee; border-radius: 5px; background-color: #fafafa; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="number"] { width: calc(100% - 120px); padding: 8px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; opacity: 0.7; }
+        .loading-spinner {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #status, #error {
+            transition: background-color 0.5s ease;
+            font-weight: bold;
+        }
+        #status.success { background-color: #d4edda; color: #155724; }
+        #status.pending { background-color: #fff3cd; color: #856404; }
+        #error.failed { background-color: #f8d7da; color: #721c24; }
+
+        .icon-spacing {
+            margin-right: 8px;
+        }
+        #connectWalletSection button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #connectErrorStatus {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #f8d7da;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 400px;
+            border-radius: 8px;
+            position: relative;
+            text-align: center; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+        }
+
+        .modal-content img {
+            max-width: 80%;
+            height: auto;
+            display: block;
+            margin: 0 auto 15px auto; 
+            border-radius: 4px;
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-status {
+            margin-bottom: 15px;
+            font-weight: bold;
+            word-wrap: break-word; 
+        }
+
+        .modal-continue-button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: block;
+            margin: 10px auto 0;
+        }
+
+        .modal-continue-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="walletConnectSection" class="container">
+        <h1><i class="fab fa-ethereum icon-spacing"></i>Sổ tiết kiệm ETH</h1>
+        <h2>Chào mừng bạn đến với DApp Tiết kiệm ETH!</h2>
+        <p>Để bắt đầu, vui lòng kết nối ví MetaMask của bạn.</p>
+        <button id="connectWalletButton" onclick="connectWallet()"><i class="fas fa-link icon-spacing"></i>Kết nối ví MetaMask</button>
+        <div id="connectErrorStatus"></div> </div>
+
+    <div id="mainDAppSection" class="container" style="display:none;">
+        <h1><i class="fab fa-ethereum icon-spacing"></i>Sổ tiết kiệm ETH</h1>
+        <p>Địa chỉ tài khoản: <span id="accountAddress">Chưa kết nối</span></p>
+
+        <div>
+            <h2>Số dư sổ tiết kiệm</h2>
+            <button onclick="getContractBalance()">Lấy số dư</button>
+            <p>Số dư hiện có: <span id="contractBalance">0.00</span> ETH</p>
+        </div>
+
+        <div>
+            <h2>Gửi ETH vào hợp đồng (Deposit)</h2>
+            <label for="depositAmount">Số ETH muốn gửi:</label>
+            <input type="number" id="depositAmount" value="0.0005" step="0.0001">
+            <button id="depositButton" onclick="depositEth()">Gửi</button>
+            <span id="depositSpinner" class="loading-spinner"></span>
+        </div>
+
+        <div>
+            <h2>Rút ETH từ hợp đồng (Withdraw)</h2>
+            <label for="withdrawAmount">Số ETH muốn rút:</label>
+            <input type="number" id="withdrawAmount" value="0.0005" step="0.0001">
+            <button id="withdrawButton" onclick="withdrawEth()">Rút</button>
+            <span id="withdrawSpinner" class="loading-spinner"></span>
+        </div>
+
+        <div id="status">Sẵn sàng.</div>
+        <div id="error" style="display:none;"></div>
+    </div>
+
+    <div id="balanceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Số Dư Hợp Đồng</h3>
+            <img src="1.jpg" alt="Balance Status">
+            <div class="modal-status"></div>
+            <button id="balanceContinueButton" class="modal-continue-button">Tiếp tục</button>
+        </div>
+    </div>
+
+    <div id="depositModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Giao Dịch Gửi ETH</h3>
+            <img src="2.jpg" alt="Deposit Status">
+            <div class="modal-status"></div>
+            <button id="depositContinueButton" class="modal-continue-button">Tiếp tục</button>
+        </div>
+    </div>
+
+    <div id="withdrawModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Giao Dịch Rút ETH</h3>
+            <img src="3.jpg" alt="Withdraw Status">
+            <div class="modal-status"></div>
+            <button id="withdrawContinueButton" class="modal-continue-button">Tiếp tục</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
